@@ -188,7 +188,10 @@ function renderProgressBar(
     const finalBar = `|${barContent.slice(0, barCharacterWidth)}|`;
 
     // 3. Percentage Part
-    const percentStr = `${(percentage * 100).toFixed(0).padStart(3, ' ')}%`;
+    const percentValue = (perspective === 'REMAINING' && isSecondBar)
+        ? displayValue / total
+        : percentage;
+    const percentStr = `${(percentValue * 100).toFixed(0).padStart(3, ' ')}%`;
     const finalPercent = ` ${percentStr} `; // Total 6 chars
 
     // Assembly: 18 (label) + 1 (space) + 61 (bar) + 6 (percent) = 86 chars
