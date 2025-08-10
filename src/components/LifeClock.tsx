@@ -6,6 +6,7 @@ import { render } from "@/lib/renderer";
 import { useMemo, useEffect, useRef } from "react";
 import { getOverlayContent, FieldRect, ButtonRect } from "@/lib/overlay";
 import { useTheme } from "@/contexts/ThemeContext";
+import clsx from "clsx";
 
 export default function LifeClock() {
   const { state, actions } = useLifeMonitorState();
@@ -133,9 +134,12 @@ export default function LifeClock() {
         {state.isEditing && confirmButtonRectRef.current && charSizeRef.current.width > 0 && (
           <button
             onClick={actions.handleConfirm}
-            className="absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm"
+            className={clsx(
+              "absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm",
+              process.env.NODE_ENV === 'development' && 'bg-yellow-500/50'
+            )}
             style={{
-              top: `${(confirmButtonRectRef.current.y * charSizeRef.current.height) - 12}px`,
+              top: `${(confirmButtonRectRef.current.y * charSizeRef.current.height) - 16}px`,
               left: `${confirmButtonRectRef.current.x * charSizeRef.current.width}px`,
               width: `${confirmButtonRectRef.current.width * charSizeRef.current.width}px`,
               height: `${confirmButtonRectRef.current.height * charSizeRef.current.height}px`,
@@ -145,9 +149,12 @@ export default function LifeClock() {
         {state.isEditing && cancelButtonRectRef.current && charSizeRef.current.width > 0 && (
           <button
             onClick={actions.handleCancel}
-            className="absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm"
+            className={clsx(
+              "absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm",
+              process.env.NODE_ENV === 'development' && 'bg-red-500/50'
+            )}
             style={{
-              top: `${(cancelButtonRectRef.current.y * charSizeRef.current.height) - 12}px`,
+              top: `${(cancelButtonRectRef.current.y * charSizeRef.current.height) - 16}px`,
               left: `${cancelButtonRectRef.current.x * charSizeRef.current.width}px`,
               width: `${cancelButtonRectRef.current.width * charSizeRef.current.width}px`,
               height: `${cancelButtonRectRef.current.height * charSizeRef.current.height}px`,
@@ -157,7 +164,10 @@ export default function LifeClock() {
         {!state.isEditing && editButtonRectRef.current && charSizeRef.current.width > 0 && (
           <button
             onClick={() => actions.setIsEditing(true)}
-            className="absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm"
+            className={clsx(
+              "absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm",
+              process.env.NODE_ENV === 'development' && 'bg-blue-500/50'
+            )}
             style={{
               top: `${(editButtonRectRef.current.y * charSizeRef.current.height)}px`,
               left: `${editButtonRectRef.current.x * charSizeRef.current.width}px`,
@@ -169,7 +179,10 @@ export default function LifeClock() {
         {!state.isEditing && switchButtonRectRef.current && charSizeRef.current.width > 0 && (
           <button
             onClick={() => actions.togglePerspective()}
-            className="absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm"
+            className={clsx(
+              "absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm",
+              process.env.NODE_ENV === 'development' && 'bg-green-500/50'
+            )}
             style={{
               top: `${(switchButtonRectRef.current.y * charSizeRef.current.height)}px`,
               left: `${switchButtonRectRef.current.x * charSizeRef.current.width}px`,

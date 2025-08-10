@@ -33,8 +33,12 @@ function drawHeader(buffer: string[], state: LifeMonitorState, timeState: TimeSt
         metric = `REMAINING: ${formatDuration(derived.remaining, true, 999 - milliseconds)}`;
     }
     
-    const headerText = `LIFE CLOCK :: ${anchor} :: ${metric}`;
-    writeToBuffer(buffer, 1, 2, headerText.padEnd(WIDTH - 4));
+    const leftPart = `LIFE CLOCK :: ${anchor}  `;
+    const rightPart = metric;
+    const totalWidth = WIDTH - 4;
+    const padding = totalWidth - leftPart.length - rightPart.length;
+    const headerText = `${leftPart}${' '.repeat(padding > 0 ? padding : 0)}${rightPart}`;
+    writeToBuffer(buffer, 1, 2, headerText);
 }
 
 function drawDateAndClock(buffer: string[], timeState: TimeState) {
@@ -226,7 +230,7 @@ function drawProgressBars(buffer: string[], state: LifeMonitorState, timeState: 
 
 function drawFooter(buffer: string[], state: LifeMonitorState) {
     const controls = "[E]dit | [S]witch";
-    const perspectiveStr = `> PERSPECTIVE :: [ ${state.perspective} ]`;
+    const perspectiveStr = `> PERSPECTIVE : [ ${state.perspective} ]`;
     const padding = WIDTH - 2 - 2 - controls.length - perspectiveStr.length;
     const footerText = `${controls}${" ".repeat(padding)}${perspectiveStr}`;
     writeToBuffer(buffer, 25, 2, footerText);
