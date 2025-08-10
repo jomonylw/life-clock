@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Noto_Sans_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+
+const notosomeMono = Noto_Sans_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  weight: "400",
+});
 
 const title = "Life Clock - Visualize Your Life's Progress in Real Time";
 const description =
@@ -67,19 +74,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={notosomeMono.className}>
       <body>
         <Script
           strategy="afterInteractive"
