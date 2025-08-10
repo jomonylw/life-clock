@@ -105,10 +105,7 @@ function renderProgressBar(
         }
     }
 
-    let percentage = denominator > 0 ? progressValue / denominator : 0;
-    if (perspective === 'REMAINING') {
-        percentage = 1 - percentage;
-    }
+    const percentage = denominator > 0 ? progressValue / denominator : 0;
 
     // 1. Label Part: right-align the label in a block of 7 chars
     // 1. Label Part: Adjust padding based on the length of the total value.
@@ -193,10 +190,17 @@ function renderProgressBar(
     const finalBar = `|${barContent.slice(0, barCharacterWidth)}|`;
 
     // 3. Percentage Part
-    const percentValue = (perspective === 'REMAINING' && isSecondBar)
-        ? displayValue / total
-        : percentage;
-    const percentStr = `${(percentValue * 100).toFixed(0).padStart(3, ' ')}%`;
+    let displayPercentage = percentage;
+    if (perspective === 'REMAINING') {
+        // For display purposes, we want to show the remaining percentage.
+        // The animation, however, needs the elapsed percentage to work correctly.
+        displayPercentage = 1 - percentage;
+    }
+    // Special case for the seconds bar in REMAINING, which shows the countdown value directly.
+    if (perspective === 'REMAINING' && isSecondBar) {
+        displayPercentage = displayValue / total;
+    }
+    const percentStr = `${(displayPercentage * 100).toFixed(0).padStart(3, ' ')}%`;
     const finalPercent = ` ${percentStr} `; // Total 6 chars
 
     // Assembly: 18 (label) + 1 (space) + 61 (bar) + 6 (percent) = 86 chars
