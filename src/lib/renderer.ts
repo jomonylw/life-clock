@@ -65,48 +65,50 @@ function renderProgressBar(
     isSecondBar: boolean = false,
     perspective: 'ELAPSED' | 'REMAINING' = 'ELAPSED',
     flash: boolean = false,
-    animation: AnimationInfo | null = null
+    animation: AnimationInfo | null = null,
+    overrideProgressValue?: number,
+    overrideDenominator?: number
 ): string {
     let displayValue: number;
-    let progressValue: number; // This will be the numerator for percentage.
-    let denominator: number; // This will be the denominator for percentage.
+    let progressValue: number;
+    let denominator: number;
 
-    const isOneBased = label === 'MONTH';
+    // Default assignments for percentage calculation
+    progressValue = overrideProgressValue !== undefined ? overrideProgressValue : value;
+    denominator = overrideDenominator !== undefined ? overrideDenominator : total;
 
-    if (perspective === 'ELAPSED') {
-        denominator = isSecondBar ? total - 1 : total;
-        if (isSecondBar) {
-            const effectiveValue = value === 0 ? total : value; // Map 0s to 60s
-            displayValue = effectiveValue;
-            progressValue = effectiveValue - 1; // Map 1-60 to 0-59
-        } else if (isOneBased) {
-            displayValue = value;
-            progressValue = value - 1; // Map 1-N to 0-N-1
-        } else { // 0-based
-            displayValue = value;
-            progressValue = value; // Map 0-N-1 to 0-N-1
+    // Logic for display value
+    const isOneBased = label === 'MONTH' || label === 'YEAR';
+
+    if (isSecondBar) { // MINUTE bar (unit: SEC)
+        if (perspective === 'ELAPSED') {
+            displayValue = value === 0 ? 60 : value;
+        } else { // REMAINING
+            displayValue = total - value;
         }
-    } else { // REMAINING
-        denominator = isSecondBar ? total - 1 : total;
-        if (isSecondBar) {
-            // 60s rem (val=0) -> display=60, progress=0 (start of bar)
-            // 1s rem (val=59) -> display=1, progress=59 (end of bar)
-            displayValue = total - value;
-            progressValue = value;
-        } else if (isOneBased) {
-            // 31d rem (val=1) -> display=31, progress=total-value (full bar)
-            // 1d rem (val=31) -> display=1, progress=0 (empty bar)
-            displayValue = total - value;
-            progressValue = total - value;
-        } else { // 0-based
-            // 60m rem (val=0) -> display=60, progress=total (full bar)
-            // 1m rem (val=59) -> display=1, progress=1 (almost empty bar)
-            displayValue = total - value;
-            progressValue = total - value;
+    } else if (isOneBased) { // MONTH, YEAR bars
+        const elapsedValue = value - 1;
+        displayValue = perspective === 'ELAPSED' ? elapsedValue : total - elapsedValue;
+    } else { // HOUR, DAY, LIFE bars
+        displayValue = perspective === 'ELAPSED' ? value : total - value;
+    }
+
+    // Special handling for percentage calculation for specific bars
+    if (isSecondBar) { // MINUTE
+        denominator = total - 1;
+        if (perspective === 'ELAPSED') {
+            progressValue = value === 0 ? 59 : value - 1;
+        }
+    } else if (isOneBased) { // MONTH, YEAR
+        if (overrideProgressValue === undefined) {
+            progressValue = value - 1;
         }
     }
 
-    const percentage = denominator > 0 ? progressValue / denominator : 0;
+    let percentage = denominator > 0 ? progressValue / denominator : 0;
+    if (perspective === 'REMAINING') {
+        percentage = 1 - percentage;
+    }
 
     // 1. Label Part: right-align the label in a block of 7 chars
     // 1. Label Part: Adjust padding based on the length of the total value.
@@ -215,14 +217,14 @@ function drawProgressBars(buffer: string[], state: LifeMonitorState, timeState: 
 
     const timeBars = [
         renderProgressBar('MINUTE', 'SEC', now.getSeconds(), 60, barWidth, true, perspective, flashState['MINUTE'], null),
-        renderProgressBar('HOUR', 'MIN', now.getMinutes(), 60, barWidth, false, perspective, false, animationState['HOUR']),
-        renderProgressBar('DAY', 'HRS', now.getHours(), 24, barWidth, false, perspective, false, animationState['DAY']),
+        renderProgressBar('HOUR', 'MIN', now.getMinutes(), 60, barWidth, false, perspective, false, animationState['HOUR'], derived.secondsInHour, derived.totalSecondsInHour),
+        renderProgressBar('DAY', 'HRS', now.getHours(), 24, barWidth, false, perspective, false, animationState['DAY'], derived.minutesInDay, derived.totalMinutesInDay),
     ];
 
     const dateBars = [
-        renderProgressBar('MONTH', 'DAY', now.getDate(), daysInMonth, barWidth, false, perspective, false, animationState['MONTH']),
-        renderProgressBar('YEAR', 'MTH', now.getMonth() + 1, 12, barWidth, false, perspective, false, animationState['YEAR']),
-        renderProgressBar('LIFE', 'YRS', elapsed.years ?? 0, lifeExpectancy, barWidth, false, perspective, false, animationState['LIFE']),
+        renderProgressBar('MONTH', 'DAY', now.getDate(), daysInMonth, barWidth, false, perspective, false, animationState['MONTH'], derived.hoursInMonth, derived.totalHoursInMonth),
+        renderProgressBar('YEAR', 'MTH', now.getMonth() + 1, 12, barWidth, false, perspective, false, animationState['YEAR'], derived.dayOfYear, derived.totalDaysInYear),
+        renderProgressBar('LIFE', 'YRS', elapsed.years ?? 0, lifeExpectancy, barWidth, false, perspective, false, animationState['LIFE'], derived.totalElapsedMonths, derived.lifeExpectancyInMonths),
     ];
 
     timeBars.forEach((line, i) => {
