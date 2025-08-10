@@ -153,7 +153,7 @@ function renderProgressBar(
             }
             // Don't draw the final head if a 'grow' animation is active,
             // as the animation logic will handle drawing the moving head.
-            if (headPos < barCharacterWidth && !(animationActive && animation.type === 'grow' && perspective === 'ELAPSED')) {
+            if (percentage > 0 && headPos < barCharacterWidth && !(animationActive && animation.type === 'grow' && perspective === 'ELAPSED')) {
                 barChars[headPos] = '█';
             }
         }
