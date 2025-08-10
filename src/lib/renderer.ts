@@ -71,7 +71,7 @@ function renderProgressBar(
     let progressValue: number; // This will be the numerator for percentage.
     let denominator: number; // This will be the denominator for percentage.
 
-    const isOneBased = label === 'DAY' || label === 'MONTH';
+    const isOneBased = label === 'MONTH';
 
     if (perspective === 'ELAPSED') {
         denominator = isSecondBar ? total - 1 : total;
