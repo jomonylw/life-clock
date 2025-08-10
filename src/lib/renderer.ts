@@ -96,7 +96,7 @@ function renderProgressBar(
         } else if (isOneBased) {
             // 31d rem (val=1) -> display=31, progress=total-value (full bar)
             // 1d rem (val=31) -> display=1, progress=0 (empty bar)
-            displayValue = total - (value - 1);
+            displayValue = total - value;
             progressValue = total - value;
         } else { // 0-based
             // 60m rem (val=0) -> display=60, progress=total (full bar)
