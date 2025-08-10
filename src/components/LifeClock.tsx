@@ -179,6 +179,16 @@ export default function LifeClock() {
           />
         )}
       </pre>
+      <a
+        href="https://github.com/jomonylw/life-clock"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-4"
+      >
+        <pre className="text-xs text-gray-500 hover:text-gray-400 transition-colors">
+          [ GITHUB ]
+        </pre>
+      </a>
     </main>
   );
 }

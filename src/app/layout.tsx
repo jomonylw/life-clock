@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
@@ -46,6 +47,9 @@ export const metadata: Metadata = {
     description,
     images: ["/screen.png"],
   },
+  verification: {
+    google: "xDDBC7M78fKnmTW8syNH_FqU51pmFkGBx2aHAbem1q4",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -65,6 +69,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-9LR8JEXZ0J"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+          
+            gtag('config', 'G-9LR8JEXZ0J');
+          `}
+        </Script>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
