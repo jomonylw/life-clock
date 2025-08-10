@@ -30,7 +30,7 @@
 
 :root {
   /* Spacing, border-radius, and fonts are shared across themes */
-  --font-mono: 'Noto Sans Mono', monospace, Menlo, Monaco, 'Courier New';
+  --font-mono: monospace, 'Courier New', Courier, Consolas, 'Lucida Console' ;
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;
