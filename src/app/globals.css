@@ -30,7 +30,7 @@
 
 :root {
   /* Spacing, border-radius, and fonts are shared across themes */
-  --font-mono: monospace, Menlo, Monaco, 'Courier New';
+  --font-mono: 'Source Code Pro', monospace, Menlo, Monaco, 'Courier New';
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;
