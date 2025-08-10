@@ -151,7 +151,9 @@ function renderProgressBar(
             for (let i = 0; i < headPos; i++) {
                 barChars[i] = '▓';
             }
-            if (headPos < barCharacterWidth) {
+            // Don't draw the final head if a 'grow' animation is active,
+            // as the animation logic will handle drawing the moving head.
+            if (headPos < barCharacterWidth && !(animationActive && animation.type === 'grow' && perspective === 'ELAPSED')) {
                 barChars[headPos] = '█';
             }
         }
@@ -161,8 +163,9 @@ function renderProgressBar(
                 const animProgress = animation.frame / ANIMATION_FRAMES;
                 const animationOffset = Math.round((barCharacterWidth - 1 - headPos) * (1 - animProgress));
                 const animCharPos = headPos + animationOffset;
-                
-                if (headPos >= 0 && headPos < barCharacterWidth) barChars[headPos] = '▓';
+
+                // Draw the moving head. The default renderer has already drawn the
+                // bar's body, and we've prevented it from drawing the static head.
                 if (animCharPos >= 0 && animCharPos < barCharacterWidth) {
                     barChars[animCharPos] = '█';
                 }
