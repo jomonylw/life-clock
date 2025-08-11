@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Menlo';
+  src: url('/font/Menlo-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
   Injecting our CLI-style theme as global CSS variables.
   Based on the darkTheme from src/lib/theme.ts
@@ -30,7 +38,7 @@
 
 :root {
   /* Spacing, border-radius, and fonts are shared across themes */
-  --font-mono: monospace, 'Courier New', Courier, Consolas, 'Lucida Console' ;
+  --font-mono: 'Menlo', monospace, 'Courier New', Courier, Consolas, 'Lucida Console' ;
 
   --spacing-xs: 4px;
   --spacing-sm: 8px;
