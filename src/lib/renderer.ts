@@ -9,7 +9,7 @@ const ANIMATION_FRAMES = 5; // 5 frames * 100ms interval = 500ms animation
 
 function writeToBuffer(buffer: string[], y: number, x: number, content: string) {
     if (y >= 0 && y < buffer.length) {
-        const line = buffer[y];
+        const line = buffer[y]; 
         buffer[y] = line.substring(0, x) + content + line.substring(x + content.length);
     }
 }
@@ -138,30 +138,84 @@ function renderProgressBar(
 
         // Default bar rendering
         if (perspective === 'REMAINING') {
-            const filledPartLength = headPos;
+            const remainingPercentage = 1 - percentage;
+            let filledPartLength;
+            if (label === 'HOUR' && total === 60) {
+                filledPartLength = total - value;
+            } else {
+                filledPartLength = Math.floor(remainingPercentage * (barCharacterWidth - 1e-9));
+            }
             const emptyPartLength = barCharacterWidth - filledPartLength;
+
             for (let i = emptyPartLength; i < barCharacterWidth; i++) {
                 barChars[i] = '▓';
             }
-            if (emptyPartLength - 1 >= 0) {
-                barChars[emptyPartLength - 1] = '█';
+            if (label === 'HOUR' && total === 60) {
+                // The head of the bar is the first character of the filled part.
+                if (filledPartLength > 0 && emptyPartLength < barCharacterWidth) {
+                    barChars[emptyPartLength] = '█';
+                }
+            } else {
+                const isShrinkAnimation = animationActive && animation.type === 'shrink' && perspective === 'REMAINING';
+                
+                // To make the bar perfectly complementary, calculate position based on ELAPSED percentage.
+                // The animation logic will handle the moving head, so we just render the final state here.
+                const headPosForRender = Math.floor(percentage * (barCharacterWidth - 1e-9));
+                const emptyPartLength = headPosForRender + 1;
+
+                for (let i = emptyPartLength; i < barCharacterWidth; i++) {
+                    barChars[i] = '▓';
+                }
+                // The head of the remaining bar starts right after the elapsed part ends.
+                // Only draw the static head if not animating.
+                if (!isShrinkAnimation && emptyPartLength < barCharacterWidth) {
+                    barChars[emptyPartLength] = '█';
+                }
             }
         } else { // ELAPSED
-            for (let i = 0; i < headPos; i++) {
+            let staticHeadPos = headPos;
+            // During a grow animation, the static bar should remain in its previous state
+            // to prevent the bar from looking like it's shortening before the animation starts.
+            if (animationActive && animation.type === 'grow' && perspective === 'ELAPSED') {
+                const prevProgressValue = progressValue > 0 ? progressValue - 1 : 0;
+                const prevPercentage = prevProgressValue / denominator;
+                staticHeadPos = Math.floor(prevPercentage * (barCharacterWidth - 1e-9));
+            }
+
+            if (label === 'HOUR' && total === 60) {
+                if (animationActive && animation.type === 'grow' && perspective === 'ELAPSED') {
+                    // For animation, the static part is the previous minute
+                    staticHeadPos = value > 0 ? value - 1 : 0;
+                } else {
+                    // For static display, it's the current minute
+                    staticHeadPos = value;
+                }
+            }
+
+            for (let i = 0; i < staticHeadPos; i++) {
                 barChars[i] = '▓';
             }
-            // Don't draw the final head if a 'grow' animation is active,
-            // as the animation logic will handle drawing the moving head.
-            if (percentage > 0 && headPos < barCharacterWidth && !(animationActive && animation.type === 'grow' && perspective === 'ELAPSED')) {
-                barChars[headPos] = '█';
+            // The head is drawn at its position. The animation logic will draw the moving head.
+            if (label === 'HOUR' && total === 60) {
+                if (staticHeadPos > 0) {
+                    barChars[staticHeadPos - 1] = '█';
+                }
+            } else {
+                if (percentage > 0 && staticHeadPos < barCharacterWidth) {
+                    barChars[staticHeadPos] = '█';
+                }
             }
         }
 
         if (animationActive) {
             if (animation.type === 'grow' && perspective === 'ELAPSED') {
-                const animProgress = animation.frame / ANIMATION_FRAMES;
-                const animationOffset = Math.round((barCharacterWidth - 1 - headPos) * (1 - animProgress));
-                const animCharPos = headPos + animationOffset;
+                const animProgress = (animation.frame - 1) / (ANIMATION_FRAMES > 1 ? ANIMATION_FRAMES - 1 : 1);
+                let finalHeadPos = headPos;
+                if (label === 'HOUR' && total === 60) {
+                    finalHeadPos = value;
+                }
+                const animationOffset = Math.round((barCharacterWidth - 1 - finalHeadPos) * (1 - animProgress));
+                const animCharPos = finalHeadPos + animationOffset;
 
                 // Draw the moving head. The default renderer has already drawn the
                 // bar's body, and we've prevented it from drawing the static head.
@@ -169,15 +223,21 @@ function renderProgressBar(
                     barChars[animCharPos] = '█';
                 }
             } else if (animation.type === 'shrink' && perspective === 'REMAINING') {
-                const animProgress = animation.frame / ANIMATION_FRAMES;
-                const prevProgressValue = progressValue + 1;
-                const prevFilledLength = Math.floor((prevProgressValue / denominator) * (barCharacterWidth - 1e-9));
-                const prevHeadCharPos = barCharacterWidth - prevFilledLength - 1;
+                const animProgress = (animation.frame - 1) / (ANIMATION_FRAMES > 1 ? ANIMATION_FRAMES - 1 : 1);
 
-                const animationOffset = -Math.round(prevHeadCharPos * animProgress);
+                // The "shrink" animation for the remaining bar is a "fly out to the left" effect.
+                // We need to calculate the head's position in the previous frame.
+                const prevProgressValue = progressValue > 0 ? progressValue - 1 : 0;
+                const prevElapsedPercentage = prevProgressValue / denominator;
+                const prevHeadCharPos = Math.floor(prevElapsedPercentage * (barCharacterWidth - 1e-9));
+
+                // The animation moves the head from its previous position to the left.
+                const animationOffset = -Math.round((prevHeadCharPos + 1) * animProgress);
                 const animCharPos = prevHeadCharPos + animationOffset;
 
-                if (prevHeadCharPos >= 0) {
+                // The static render has already drawn the final state of the bar.
+                // We need to erase the previous head and draw the animated one.
+                if (prevHeadCharPos >= 0 && prevHeadCharPos < barCharacterWidth) {
                     barChars[prevHeadCharPos] = '░';
                 }
                 if (animCharPos >= 0 && animCharPos < barCharacterWidth) {
