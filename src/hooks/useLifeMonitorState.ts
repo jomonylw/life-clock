@@ -132,6 +132,37 @@ export const useLifeMonitorState = () => {
     }
   }, [state.birthDate, state.lifeExpectancy, setIsEditing]);
 
+  const adjustValue = useCallback((amount: number) => {
+    setState(s => {
+        const newS = {...s};
+        switch (s.activeField) {
+            case 'year':
+                newS.draftYear += amount;
+                break;
+            case 'month':
+                const newMonth = s.draftMonth + amount;
+                if (newMonth > 12) newS.draftMonth = 1;
+                else if (newMonth < 1) newS.draftMonth = 12;
+                else newS.draftMonth = newMonth;
+                break;
+            case 'day':
+                const maxDays = new Date(s.draftYear, s.draftMonth, 0).getDate();
+                const newDay = s.draftDay + amount;
+                if (newDay > maxDays) newS.draftDay = 1;
+                else if (newDay < 1) newS.draftDay = maxDays;
+                else newS.draftDay = newDay;
+                break;
+            case 'lifeExpectancy':
+                let newLifeExpectancy = s.draftLifeExpectancy + amount;
+                if (newLifeExpectancy > 999) newLifeExpectancy = 10;
+                if (newLifeExpectancy < 10) newLifeExpectancy = 999;
+                newS.draftLifeExpectancy = newLifeExpectancy;
+                break;
+        }
+        return newS;
+    });
+  }, []);
+
   // Keyboard controls for editing mode
   useEffect(() => {
     if (!state.isEditing) return;
@@ -210,37 +241,6 @@ export const useLifeMonitorState = () => {
       const fieldOrder: EditableField[] = ['year', 'month', 'day', 'lifeExpectancy'];
       const currentIndex = fieldOrder.indexOf(state.activeField);
 
-      const adjustValue = (amount: number) => {
-        setState(s => {
-            const newS = {...s};
-            switch (s.activeField) {
-                case 'year':
-                    newS.draftYear += amount;
-                    break;
-                case 'month':
-                    const newMonth = s.draftMonth + amount;
-                    if (newMonth > 12) newS.draftMonth = 1;
-                    else if (newMonth < 1) newS.draftMonth = 12;
-                    else newS.draftMonth = newMonth;
-                    break;
-                case 'day':
-                    const maxDays = new Date(s.draftYear, s.draftMonth, 0).getDate();
-                    const newDay = s.draftDay + amount;
-                    if (newDay > maxDays) newS.draftDay = 1;
-                    else if (newDay < 1) newS.draftDay = maxDays;
-                    else newS.draftDay = newDay;
-                    break;
-                case 'lifeExpectancy':
-                    let newLifeExpectancy = s.draftLifeExpectancy + amount;
-                    if (newLifeExpectancy > 999) newLifeExpectancy = 10;
-                    if (newLifeExpectancy < 10) newLifeExpectancy = 999;
-                    newS.draftLifeExpectancy = newLifeExpectancy;
-                    break;
-            }
-            return newS;
-        });
-      };
-
       switch (event.key) {
         case 'ArrowRight':
         case 'Tab':
@@ -264,7 +264,7 @@ export const useLifeMonitorState = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.isEditing, state.activeField, state.draftYear, state.draftMonth, state.draftDay, state.draftLifeExpectancy, handleConfirm, handleCancel]);
+  }, [state.isEditing, state.activeField, state.draftYear, state.draftMonth, state.draftDay, state.draftLifeExpectancy, handleConfirm, handleCancel, adjustValue]);
 
   const actions = useMemo(
     () => ({
@@ -274,8 +274,9 @@ export const useLifeMonitorState = () => {
       setActiveField,
       handleConfirm,
       handleCancel,
+      adjustValue,
     }),
-    [togglePerspective, setUserData, setIsEditing, setActiveField, handleConfirm, handleCancel]
+    [togglePerspective, setUserData, setIsEditing, setActiveField, handleConfirm, handleCancel, adjustValue]
   );
 
   return {

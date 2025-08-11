@@ -15,10 +15,35 @@ export default function LifeClock() {
   const overlayFields = useRef<FieldRect[]>([]);
   const confirmButtonRectRef = useRef<ButtonRect | null>(null);
   const cancelButtonRectRef = useRef<ButtonRect | null>(null);
+  const adjustUpButtonRectRef = useRef<ButtonRect | null>(null);
+  const adjustDownButtonRectRef = useRef<ButtonRect | null>(null);
   const editButtonRectRef = useRef<ButtonRect | null>(null);
   const switchButtonRectRef = useRef<ButtonRect | null>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const charSizeRef = useRef({ width: 0, height: 0 });
+  const pressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePressStart = (amount: number) => {
+    actions.adjustValue(amount); // Immediate feedback
+
+    pressTimeoutRef.current = setTimeout(() => {
+      pressIntervalRef.current = setInterval(() => {
+        actions.adjustValue(amount);
+      }, 100); // Adjust speed here
+    }, 400); // Delay before rapid adjust
+  };
+
+  const handlePressEnd = () => {
+    if (pressTimeoutRef.current) {
+      clearTimeout(pressTimeoutRef.current);
+      pressTimeoutRef.current = null;
+    }
+    if (pressIntervalRef.current) {
+      clearInterval(pressIntervalRef.current);
+      pressIntervalRef.current = null;
+    }
+  };
 
   const screenBuffer = useMemo(() => {
     let overlayBuffer: string[] | undefined = undefined;
@@ -43,10 +68,14 @@ export default function LifeClock() {
       overlayFields.current = overlay.fields;
       confirmButtonRectRef.current = overlay.confirmButtonRect;
       cancelButtonRectRef.current = overlay.cancelButtonRect;
+      adjustUpButtonRectRef.current = overlay.adjustUpButtonRect;
+      adjustDownButtonRectRef.current = overlay.adjustDownButtonRect;
     } else {
       overlayFields.current = [];
       confirmButtonRectRef.current = null;
       cancelButtonRectRef.current = null;
+      adjustUpButtonRectRef.current = null;
+      adjustDownButtonRectRef.current = null;
     }
     const renderResult = render(state, timeState, overlayBuffer);
     editButtonRectRef.current = renderResult.editButtonRect;
@@ -191,6 +220,63 @@ export default function LifeClock() {
             }}
           />
         )}
+        {state.isEditing && adjustUpButtonRectRef.current && charSizeRef.current.width > 0 && (
+          <button
+            onMouseDown={() => handlePressStart(1)}
+            onMouseUp={handlePressEnd}
+            onMouseLeave={handlePressEnd}
+            onTouchStart={(e) => { e.preventDefault(); handlePressStart(1); }}
+            onTouchEnd={handlePressEnd}
+            onTouchCancel={handlePressEnd}
+            className={clsx(
+              "absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm",
+              process.env.NODE_ENV === 'development' && 'bg-purple-500/50'
+            )}
+            style={{
+              top: `${(adjustUpButtonRectRef.current.y * charSizeRef.current.height)}px`,
+              left: `${adjustUpButtonRectRef.current.x * charSizeRef.current.width}px`,
+              width: `${adjustUpButtonRectRef.current.width * charSizeRef.current.width}px`,
+              height: `${adjustUpButtonRectRef.current.height * charSizeRef.current.height}px`,
+            }}
+          />
+        )}
+        {state.isEditing && adjustDownButtonRectRef.current && charSizeRef.current.width > 0 && (
+          <button
+            onMouseDown={() => handlePressStart(-1)}
+            onMouseUp={handlePressEnd}
+            onMouseLeave={handlePressEnd}
+            onTouchStart={(e) => { e.preventDefault(); handlePressStart(-1); }}
+            onTouchEnd={handlePressEnd}
+            onTouchCancel={handlePressEnd}
+            className={clsx(
+              "absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm",
+              process.env.NODE_ENV === 'development' && 'bg-purple-500/50'
+            )}
+            style={{
+              top: `${(adjustDownButtonRectRef.current.y * charSizeRef.current.height)}px`,
+              left: `${adjustDownButtonRectRef.current.x * charSizeRef.current.width}px`,
+              width: `${adjustDownButtonRectRef.current.width * charSizeRef.current.width}px`,
+              height: `${adjustDownButtonRectRef.current.height * charSizeRef.current.height}px`,
+            }}
+          />
+        )}
+        {state.isEditing &&
+          overlayFields.current.map((field) => (
+            <div
+              key={field.name}
+              className={clsx(
+                "absolute",
+                process.env.NODE_ENV === "development" &&
+                  "bg-cyan-500/20"
+              )}
+              style={{
+                top: `${field.y * charSizeRef.current.height}px`,
+                left: `${field.x * charSizeRef.current.width}px`,
+                width: `${field.width * charSizeRef.current.width}px`,
+                height: `${field.height * charSizeRef.current.height}px`,
+              }}
+            />
+          ))}
       </pre>
       <a
         href="https://github.com/jomonylw/life-clock"

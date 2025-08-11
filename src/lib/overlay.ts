@@ -9,7 +9,7 @@ export interface FieldRect {
 }
 
 export interface ButtonRect {
-  name: 'confirm' | 'cancel' | 'edit' | 'switch';
+  name: 'confirm' | 'cancel' | 'edit' | 'switch' | 'adjustUp' | 'adjustDown';
   x: number;
   y: number;
   width: number;
@@ -31,6 +31,8 @@ export interface OverlayContent {
     fields: FieldRect[];
     confirmButtonRect: ButtonRect;
     cancelButtonRect: ButtonRect;
+    adjustUpButtonRect: ButtonRect | null;
+    adjustDownButtonRect: ButtonRect | null;
 }
 
 export const getOverlayContent = (params: GetOverlayContentParams): OverlayContent => {
@@ -61,30 +63,72 @@ export const getOverlayContent = (params: GetOverlayContentParams): OverlayConte
     const { overlayX, overlayY } = params;
     const yPos = 4;
     const birthDateLabel = " Birth Date (YYYY/MM/DD): ";
+    const yearStrDisplay = activeField === 'year' ? `[${yearStr}]` : yearStr;
+    const monthStrDisplay = activeField === 'month' ? `[${monthStr}]` : monthStr;
+    const dayStrDisplay = activeField === 'day' ? `[${dayStr}]` : dayStr;
+    const lifeExpectancyValue = activeField === 'lifeExpectancy' ? `[${lifeExpectancyStr}]` : ` ${lifeExpectancyStr} `;
+
     const yearX = birthDateLabel.length + 1;
-    const monthX = yearX + 5;
-    const dayX = monthX + 3;
+    const monthX = yearX + yearStrDisplay.length + 1; // +1 for '/'
+    const dayX = monthX + monthStrDisplay.length + 1; // +1 for '/'
 
-    fields.push({ name: 'year', x: overlayX + yearX, y: overlayY + yPos, width: 4, height: 1 });
-    fields.push({ name: 'month', x: overlayX + monthX, y: overlayY + yPos, width: 2, height: 1 });
-    fields.push({ name: 'day', x: overlayX + dayX, y: overlayY + yPos, width: 2, height: 1 });
-
-    const birthDateText = `${birthDateLabel}${
-        activeField === 'year' ? `[${yearStr}]` : `${yearStr}`
-    }/${
-        activeField === 'month' ? `[${monthStr}]` : `${monthStr}`
-    }/${
-        activeField === 'day' ? `[${dayStr}]` : `${dayStr}`
-    }`;
+    fields.push({ name: 'year', x: overlayX + yearX, y: overlayY + yPos, width: yearStrDisplay.length, height: 1 });
+    fields.push({ name: 'month', x: overlayX + monthX, y: overlayY + yPos, width: monthStrDisplay.length, height: 1 });
+    fields.push({ name: 'day', x: overlayX + dayX, y: overlayY + yPos, width: dayStrDisplay.length, height: 1 });
 
     const lifeExpectancyLabel = " Life Expectancy (Years): ";
     const lifeExpectancyX = lifeExpectancyLabel.length + 1;
     const lifeExpectancyY = yPos + 2;
-    fields.push({ name: 'lifeExpectancy', x: overlayX + lifeExpectancyX, y: overlayY + lifeExpectancyY, width: lifeExpectancyStr.length + 2, height: 1 });
+    fields.push({ name: 'lifeExpectancy', x: overlayX + lifeExpectancyX, y: overlayY + lifeExpectancyY, width: lifeExpectancyValue.length, height: 1 });
 
-    const lifeExpectancyText = `${lifeExpectancyLabel}${
-        activeField === 'lifeExpectancy' ? `[${lifeExpectancyStr}]` : ` ${lifeExpectancyStr} `
-    }`;
+    const birthDateValues = `${yearStrDisplay}/${monthStrDisplay}/${dayStrDisplay}`;
+
+    const adjustButtonsText = "  [ ▲ ] [ ▼ ]"; // Further increased spacing
+    let birthDateText = `${birthDateLabel}${birthDateValues}`;
+    let lifeExpectancyText = `${lifeExpectancyLabel}${lifeExpectancyValue}`;
+
+    let adjustUpButtonRect: ButtonRect | null = null;
+    let adjustDownButtonRect: ButtonRect | null = null;
+
+    const activeFieldRect = fields.find(f => f.name === activeField);
+
+    if (activeFieldRect) {
+        const isDateField = activeField === 'year' || activeField === 'month' || activeField === 'day';
+        const isLifeExpectancyField = activeField === 'lifeExpectancy';
+
+        let buttonX: number;
+        let buttonY: number;
+
+        if (isDateField) {
+            buttonX = overlayX + birthDateText.length;
+            buttonY = overlayY + yPos;
+            birthDateText += adjustButtonsText;
+        } else if (isLifeExpectancyField) {
+            buttonX = overlayX + lifeExpectancyText.length;
+            buttonY = overlayY + lifeExpectancyY;
+            lifeExpectancyText += adjustButtonsText;
+        } else {
+            buttonX = 0;
+            buttonY = 0;
+        }
+
+        if (buttonX > 0) {
+            adjustUpButtonRect = {
+                name: 'adjustUp',
+                x: buttonX + 3, // Adjusted for new spacing "   [ ▲ ]"
+                y: buttonY,
+                width: 5,      // Width of "[ ▲ ]"
+                height: 1,
+            };
+            adjustDownButtonRect = {
+                name: 'adjustDown',
+                x: buttonX + 9, // Adjusted for new spacing "   [ ▲ ] [ ▼ ]"
+                y: buttonY,
+                width: 5,      // Width of "[ ▼ ]"
+                height: 1,
+            };
+        }
+    }
     
     const instructionsText = "[Arrows] Move/Adjust";
     const confirmText = "[Enter] Confirm";
@@ -124,5 +168,5 @@ export const getOverlayContent = (params: GetOverlayContentParams): OverlayConte
         height: 1,
     };
 
-    return { buffer, fields, confirmButtonRect, cancelButtonRect };
+    return { buffer, fields, confirmButtonRect, cancelButtonRect, adjustUpButtonRect, adjustDownButtonRect };
 }
