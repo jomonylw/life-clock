@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 const title = "Life Clock - Visualize Your Life's Progress in Real Time";
 const description =
   "Life Clock is a real-time, CLI-style life progress monitor. Track your life's journey, set goals, and stay motivated by visualizing your time. Perfect for developers, students, and anyone looking to make the most of their time.";
-const url = "https://life-clock.jomo.pro";
+const url = "https://life-clock-cli.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(url),
