@@ -9,6 +9,13 @@ import { useTheme } from "@/contexts/ThemeContext";
 import clsx from "clsx";
 
 export default function LifeClock() {
+  const SCREEN_WIDTH = 89;
+  const SCREEN_HEIGHT = 27;
+  const OVERLAY_WIDTH = 60;
+  const OVERLAY_HEIGHT = 10;
+  const overlayX = Math.floor((SCREEN_WIDTH - OVERLAY_WIDTH) / 2);
+  const overlayY = Math.floor((SCREEN_HEIGHT - OVERLAY_HEIGHT) / 2);
+
   const { state, actions } = useLifeMonitorState();
   const timeState = useTimeState(state.birthDate, state.perspective);
   const { toggleTheme } = useTheme();
@@ -23,6 +30,8 @@ export default function LifeClock() {
   const charSizeRef = useRef({ width: 0, height: 0 });
   const pressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const adjustUpButtonRef = useRef<HTMLButtonElement>(null);
+  const adjustDownButtonRef = useRef<HTMLButtonElement>(null);
 
   const handlePressStart = (amount: number) => {
     actions.adjustValue(amount); // Immediate feedback
@@ -48,13 +57,6 @@ export default function LifeClock() {
   const screenBuffer = useMemo(() => {
     let overlayBuffer: string[] | undefined = undefined;
     if (state.isEditing) {
-      const SCREEN_WIDTH = 89;
-      const SCREEN_HEIGHT = 27;
-      const OVERLAY_WIDTH = 60;
-      const OVERLAY_HEIGHT = 10;
-      const overlayX = Math.floor((SCREEN_WIDTH - OVERLAY_WIDTH) / 2);
-      const overlayY = Math.floor((SCREEN_HEIGHT - OVERLAY_HEIGHT) / 2);
-
       const overlay = getOverlayContent({
         year: state.draftYear,
         month: state.draftMonth,
@@ -103,13 +105,6 @@ export default function LifeClock() {
     const y = Math.floor((event.clientY - rect.top) / charSizeRef.current.height);
 
     if (state.isEditing) {
-      const SCREEN_WIDTH = 89;
-      const SCREEN_HEIGHT = 27;
-      const OVERLAY_WIDTH = 60;
-      const OVERLAY_HEIGHT = 10;
-      const overlayX = Math.floor((SCREEN_WIDTH - OVERLAY_WIDTH) / 2);
-      const overlayY = Math.floor((SCREEN_HEIGHT - OVERLAY_HEIGHT) / 2);
-
       const isClickInsideOverlay =
         x >= overlayX &&
         x < overlayX + OVERLAY_WIDTH &&
@@ -155,6 +150,48 @@ export default function LifeClock() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [state.isEditing, actions, toggleTheme]);
+
+  useEffect(() => {
+    const upButton = adjustUpButtonRef.current;
+    const downButton = adjustDownButtonRef.current;
+
+    const handleTouchStart = (e: TouchEvent, amount: number) => {
+      e.preventDefault();
+      handlePressStart(amount);
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      handlePressEnd();
+    };
+
+    const upTouchStart = (e: TouchEvent) => handleTouchStart(e, 1);
+    const downTouchStart = (e: TouchEvent) => handleTouchStart(e, -1);
+
+    if (upButton) {
+      upButton.addEventListener('touchstart', upTouchStart, { passive: false });
+      upButton.addEventListener('touchend', handleTouchEnd, { passive: false });
+      upButton.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+    }
+    if (downButton) {
+      downButton.addEventListener('touchstart', downTouchStart, { passive: false });
+      downButton.addEventListener('touchend', handleTouchEnd, { passive: false });
+      downButton.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+    }
+
+    return () => {
+      if (upButton) {
+        upButton.removeEventListener('touchstart', upTouchStart);
+        upButton.removeEventListener('touchend', handleTouchEnd);
+        upButton.removeEventListener('touchcancel', handleTouchEnd);
+      }
+      if (downButton) {
+        downButton.removeEventListener('touchstart', downTouchStart);
+        downButton.removeEventListener('touchend', handleTouchEnd);
+        downButton.removeEventListener('touchcancel', handleTouchEnd);
+      }
+    };
+  }, [state.isEditing]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center font-mono">
@@ -222,12 +259,10 @@ export default function LifeClock() {
         )}
         {state.isEditing && adjustUpButtonRectRef.current && charSizeRef.current.width > 0 && (
           <button
+            ref={adjustUpButtonRef}
             onMouseDown={() => handlePressStart(1)}
             onMouseUp={handlePressEnd}
             onMouseLeave={handlePressEnd}
-            onTouchStart={(e) => { e.preventDefault(); handlePressStart(1); }}
-            onTouchEnd={handlePressEnd}
-            onTouchCancel={handlePressEnd}
             className={clsx(
               "absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm",
               process.env.NODE_ENV === 'development' && 'bg-purple-500/50'
@@ -242,12 +277,10 @@ export default function LifeClock() {
         )}
         {state.isEditing && adjustDownButtonRectRef.current && charSizeRef.current.width > 0 && (
           <button
+            ref={adjustDownButtonRef}
             onMouseDown={() => handlePressStart(-1)}
             onMouseUp={handlePressEnd}
             onMouseLeave={handlePressEnd}
-            onTouchStart={(e) => { e.preventDefault(); handlePressStart(-1); }}
-            onTouchEnd={handlePressEnd}
-            onTouchCancel={handlePressEnd}
             className={clsx(
               "absolute focus:outline-none hover:bg-white/10 transition-colors rounded-sm",
               process.env.NODE_ENV === 'development' && 'bg-purple-500/50'
@@ -277,6 +310,50 @@ export default function LifeClock() {
               }}
             />
           ))}
+        {process.env.NODE_ENV === 'development' && state.isEditing && (
+        <>
+          {/* Top */}
+          <div
+            className="absolute bg-blue-500/50 pointer-events-none"
+            style={{
+              top: 0,
+              left: 0,
+              width: `${SCREEN_WIDTH * charSizeRef.current.width}px`,
+              height: `${overlayY * charSizeRef.current.height}px`,
+            }}
+          />
+          {/* Bottom */}
+          <div
+            className="absolute bg-blue-500/50 pointer-events-none"
+            style={{
+              top: `${(overlayY + OVERLAY_HEIGHT) * charSizeRef.current.height}px`,
+              left: 0,
+              width: `${SCREEN_WIDTH * charSizeRef.current.width}px`,
+              height: `${(SCREEN_HEIGHT - (overlayY + OVERLAY_HEIGHT)) * charSizeRef.current.height}px`,
+            }}
+          />
+          {/* Left */}
+          <div
+            className="absolute bg-blue-500/50 pointer-events-none"
+            style={{
+              top: `${overlayY * charSizeRef.current.height}px`,
+              left: 0,
+              width: `${overlayX * charSizeRef.current.width}px`,
+              height: `${OVERLAY_HEIGHT * charSizeRef.current.height}px`,
+            }}
+          />
+          {/* Right */}
+          <div
+            className="absolute bg-blue-500/50 pointer-events-none"
+            style={{
+              top: `${overlayY * charSizeRef.current.height}px`,
+              left: `${(overlayX + OVERLAY_WIDTH) * charSizeRef.current.width}px`,
+              width: `${(SCREEN_WIDTH - (overlayX + OVERLAY_WIDTH)) * charSizeRef.current.width}px`,
+              height: `${OVERLAY_HEIGHT * charSizeRef.current.height}px`,
+            }}
+          />
+        </>
+      )}
       </pre>
       <a
         href="https://github.com/jomonylw/life-clock"
